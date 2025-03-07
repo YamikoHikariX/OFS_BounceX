@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 
+# Add this before any add_subdirectory calls
+set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
+# Add this line to force minimum version for all subdirectories
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+
 project(scripter)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
