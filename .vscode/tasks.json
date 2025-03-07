@@ -11,7 +11,9 @@
                 "--config",
                 "Release",
                 "--target",
-                "OpenFunscripter"
+                "OpenFunscripter",
+                "--parallel",
+                "${env:NUMBER_OF_PROCESSORS}"
             ],
             "group": {
                 "kind": "build",

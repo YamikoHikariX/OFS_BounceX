@@ -85,7 +85,7 @@ void OFS_ChapterManager::ShowWindow(bool* open) noexcept
     ImGui::End();
 }
 
-bool OFS_ChapterManager::ExportClip(const Chapter& chapter, const std::string& outputDirStr) noexcept
+bool OFS_ChapterManager::ExportClip(const Chapter& chapter, const std::string& outputDirStr, bool exportVideo) noexcept
 {
     auto app = OpenFunscripter::ptr;
     char startTimeChar[16];
@@ -93,15 +93,13 @@ bool OFS_ChapterManager::ExportClip(const Chapter& chapter, const std::string& o
     stbsp_snprintf(startTimeChar, sizeof(startTimeChar), "%f", chapter.startTime);
     stbsp_snprintf(endTimeChar, sizeof(endTimeChar), "%f", chapter.endTime);
 
-    
     auto outputDir = Util::PathFromString(outputDirStr);
     auto mediaPath = Util::PathFromString(app->player->VideoPath());
-
     auto& projectState = app->LoadedProject->State();
 
     for(auto& script : app->LoadedFunscripts())
     {
-        auto scriptOutputPath = (outputDir / (chapter.name + "_" + script->Title()));
+        auto scriptOutputPath = outputDir / (script->Title() + "_" + chapter.name);
         scriptOutputPath.replace_extension(".funscript");
         auto scriptOutputPathStr = scriptOutputPath.u8string();
 
@@ -118,6 +116,8 @@ bool OFS_ChapterManager::ExportClip(const Chapter& chapter, const std::string& o
         auto funscriptText = Util::SerializeJson(funscriptJson);
         Util::WriteFile(scriptOutputPathStr.c_str(), funscriptText.data(), funscriptText.size());
     }
+
+    if (!exportVideo) return true;
 
     auto clippedMedia = Util::PathFromString("");
     clippedMedia.replace_filename(chapter.name + "_" + mediaPath.filename().u8string());

@@ -26,6 +26,8 @@
 #include "asap.h"
 #include "OFS_GL.h"
 
+#include "GitDefines.h"
+
 // TODO: Use ImGui tables API in keybinding UI
 // TODO: extend "range extender" functionality ( only extend bottom/top, range reducer )
 // TODO: render simulator relative to video position & zoom
@@ -1874,6 +1876,24 @@ void OpenFunscripter::quickExport() noexcept
 {
     OFS_PROFILE(__FUNCTION__);
     LoadedProject->ExportFunscripts();
+
+    auto& funscripts = LoadedProject->Funscripts;
+    auto relativePath = funscripts[0]->RelativePath();
+    const auto& chapterState = chapterMgr->State();
+    auto chapterExportDir = Util::PathFromString(relativePath);
+    chapterExportDir.remove_filename();
+    chapterExportDir = LoadedProject->MakePathAbsolute(chapterExportDir.u8string());
+
+    LOGF_INFO("Exporting to path: %s", chapterExportDir.u8string().c_str());
+
+    if (!chapterState.chapters.empty()) {
+        const auto& ofsState = OpenFunscripterState::State(stateHandle);
+        for (const auto& chapter : chapterState.chapters) {
+            if (!OFS_ChapterManager::ExportClip(chapter, chapterExportDir.u8string())) {
+                LOG_ERROR("Failed to export chapter clip");
+            }
+        }
+    }
 }
 
 bool OpenFunscripter::closeProject(bool closeWithUnsavedChanges) noexcept

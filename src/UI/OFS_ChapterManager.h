@@ -14,7 +14,7 @@ class OFS_ChapterManager
     OFS_ChapterManager(OFS_ChapterManager&&) = delete;
     ~OFS_ChapterManager() noexcept;
 
-    static bool ExportClip(const class Chapter& chapter, const std::string& outputDirStr) noexcept;
+    static bool ExportClip(const class Chapter& chapter, const std::string& outputDirStr, bool exportVideo = false) noexcept;
     void ShowWindow(bool* open) noexcept;
 
     class ChapterState& State() noexcept;
