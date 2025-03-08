@@ -1,4 +1,4 @@
-﻿#include "OpenFunscripter.h"
+#include "OpenFunscripter.h"
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
 #include "OFS_ImGui.h"
@@ -1387,6 +1387,7 @@ void OpenFunscripter::ScriptTimelineActionClicked(const FunscriptActionClickedEv
     }
     else {
         player->SetPositionExact(ev->action.atS);
+        ActiveFunscript()->ClearSelection();
     }
 }
 
