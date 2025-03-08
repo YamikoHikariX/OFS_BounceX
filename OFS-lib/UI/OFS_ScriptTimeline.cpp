@@ -155,29 +155,29 @@ void ScriptTimeline::handleSelectionScrolling(const OverlayDrawingCtx& ctx) noex
 	}
 }
 
-void ScriptTimeline::handleTimelineHover(const OverlayDrawingCtx& ctx) noexcept
+void ScriptTimeline::handleTimelineHoverSelecting(const OverlayDrawingCtx& ctx) noexcept
 {
-	if(IsSelecting)
-    {
-        auto mousePos = ImGui::GetMousePos();
-        // Update horizontal selection
-        relSel2 = (mousePos.x - ctx.canvasPos.x) / ctx.canvasSize.x;
-        relSel2 = Util::Clamp(relSel2, 0.f, 1.f);
-        
-        // Update vertical selection
-        float localY = (mousePos.y - ctx.canvasPos.y) / ctx.canvasSize.y;
-        vertSel2 = 100.f - (localY * 100.f);
-        vertSel2 = Util::Clamp(vertSel2, 0.f, 100.f);
-    }
-	else if(ImGui::IsMouseDragging(ImGuiMouseButton_Middle))
-	{
-		// middle mouse panning
-		auto delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Middle);
-		float timeDelta = (-delta.x / ctx.canvasSize.x) * ctx.visibleTime;
-		float seekToTime = (ctx.offsetTime + (ctx.visibleTime/2.f)) + timeDelta;
-		EV::Enqueue<ShouldSetTimeEvent>(seekToTime);
-		ImGui::ResetMouseDragDelta(ImGuiMouseButton_Middle);
-	}
+	auto mousePos = ImGui::GetMousePos();
+	// Update horizontal selection
+	relSel2 = (mousePos.x - ctx.canvasPos.x) / ctx.canvasSize.x;
+	relSel2 = Util::Clamp(relSel2, 0.f, 1.f);
+
+	// if (ctx.drawingScriptIdx != ctx.activeScriptIdx)
+	// 	return;
+
+	float localY = (mousePos.y - ctx.canvasPos.y) / ctx.canvasSize.y;
+	vertSel2 = 100.f - (localY * 100.f);
+	vertSel2 = Util::Clamp(vertSel2, 0.f, 100.f);
+}
+
+void ScriptTimeline::handleTimelineMouseDragging(const OverlayDrawingCtx& ctx) noexcept
+{
+	// middle mouse panning
+	auto delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Middle);
+	float timeDelta = (-delta.x / ctx.canvasSize.x) * ctx.visibleTime;
+	float seekToTime = (ctx.offsetTime + (ctx.visibleTime/2.f)) + timeDelta;
+	EV::Enqueue<ShouldSetTimeEvent>(seekToTime);
+	ImGui::ResetMouseDragDelta(ImGuiMouseButton_Middle);
 }
 
 bool ScriptTimeline::handleTimelineClicks(const OverlayDrawingCtx& ctx) noexcept
@@ -471,9 +471,12 @@ void ScriptTimeline::ShowScriptPositions(
 			bool clearSelection = !(SDL_GetModState() & KMOD_CTRL);
 			updateSelection(drawingCtx, clearSelection);
 		}
-		else if(IsMovingIdx < 0 && ItemIsHovered)
+		else if(IsMovingIdx < 0)
 		{
-			handleTimelineHover(drawingCtx);
+			if (IsSelecting && drawingCtx.drawingScriptIdx == drawingCtx.activeScriptIdx)
+				handleTimelineHoverSelecting(drawingCtx);
+			else if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle) && ItemIsHovered)
+				handleTimelineMouseDragging(drawingCtx);
 		}
 
 		ImVec2 newCursor(drawingCtx.canvasPos.x, drawingCtx.canvasPos.y + drawingCtx.canvasSize.y + verticalSpacingBetweenScripts);

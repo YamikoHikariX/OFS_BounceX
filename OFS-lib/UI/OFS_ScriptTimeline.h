@@ -31,7 +31,8 @@ private:
 	void videoLoaded(const class VideoLoadedEvent* ev) noexcept;
 
 	void handleSelectionScrolling(const OverlayDrawingCtx& ctx) noexcept;
-	void handleTimelineHover(const OverlayDrawingCtx& ctx) noexcept;
+	void handleTimelineHoverSelecting(const OverlayDrawingCtx& ctx) noexcept;
+	void handleTimelineMouseDragging(const OverlayDrawingCtx& ctx) noexcept;
 	bool handleTimelineClicks(const OverlayDrawingCtx& ctx) noexcept;
 
 	void updateSelection(const OverlayDrawingCtx& ctx, bool clear) noexcept;
