@@ -248,6 +248,7 @@ public:
 	void SelectBottomActions() noexcept;
 	void SelectMidActions() noexcept;
 	void SelectTime(float fromTime, float toTime, bool clear=true) noexcept;
+	void SelectTimeAndPosition(float fromTime, float toTime, float minPos, float maxPos, bool clear) noexcept;
 	FunscriptArray GetSelection(float fromTime, float toTime) noexcept;
 
 	void SelectAction(FunscriptAction select) noexcept;

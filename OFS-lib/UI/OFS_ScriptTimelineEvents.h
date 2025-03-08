@@ -54,13 +54,14 @@ class WaveformProcessingFinishedEvent : public OFS_Event<WaveformProcessingFinis
     public:
 };
 
-class FunscriptShouldSelectTimeEvent : public OFS_Event<FunscriptShouldSelectTimeEvent>
-{
-    public:
+class FunscriptShouldSelectTimeEvent: public OFS_Event<FunscriptShouldSelectTimeEvent> {
+public:
     float startTime;
     float endTime;
+    float minPos;
+    float maxPos;
     bool clearSelection;
     std::weak_ptr<Funscript> script;
-    FunscriptShouldSelectTimeEvent(float startTime, float endTime, bool clear, std::weak_ptr<Funscript> script) noexcept
-        : startTime(startTime), endTime(endTime), clearSelection(clear), script(script) {}
+    FunscriptShouldSelectTimeEvent(float startTime, float endTime, float minPos, float maxPos, bool clear, std::weak_ptr<Funscript> script) noexcept
+    : startTime(startTime), endTime(endTime), minPos(minPos), maxPos(maxPos), clearSelection(clear), script(script) {}
 };

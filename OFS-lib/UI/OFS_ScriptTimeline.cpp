@@ -30,21 +30,45 @@ inline static FunscriptAction getActionForPoint(const OverlayDrawingCtx& ctx, Im
 
 void ScriptTimeline::updateSelection(const OverlayDrawingCtx& ctx, bool clear) noexcept
 {
-	OFS_PROFILE(__FUNCTION__);
-	float relSel1 = (absSel1 - ctx.offsetTime) / visibleTime;
-	float min = std::min(relSel1, relSel2);
-	float max = std::max(relSel1, relSel2);
+    OFS_PROFILE(__FUNCTION__);
+    float relSel1 = (absSel1 - ctx.offsetTime) / visibleTime;
+    float timeMin = std::min(relSel1, relSel2);
+    float timeMax = std::max(relSel1, relSel2);
 
-	float startTime = ctx.offsetTime + (visibleTime * min);
-	float endTime = ctx.offsetTime + (visibleTime * max);
+    float startTime = ctx.offsetTime + (visibleTime * timeMin);
+    float endTime = ctx.offsetTime + (visibleTime * timeMax);
 
-	float selectionInterval = endTime - startTime;
-	// Tiny selections are ignored this is a bit arbitrary.
-	// It's supposed to prevent accidentally clearing the selection.
-	if(selectionInterval <= 0.008f) // 8ms
-		return;
-	
-	EV::Enqueue<FunscriptShouldSelectTimeEvent>(startTime, endTime, clear, ctx.ActiveScript());
+    float selectionInterval = endTime - startTime;
+    // Tiny selections are ignored
+    if (selectionInterval <= 0.008f) // 8ms
+        return;
+
+    if (IsRectangularSelect) {
+        // Rectangular selection - use both time and height bounds
+        float heightMin = std::min(vertSel1, vertSel2);
+        float heightMax = std::max(vertSel1, vertSel2);
+		float heightPadding = 3.0f;
+
+		heightMin -= heightPadding;
+		heightMax += heightPadding;
+
+		heightMin = Util::Clamp(heightMin, 0.f, 100.f);
+		heightMax = Util::Clamp(heightMax, 0.f, 100.f);
+
+        EV::Enqueue<FunscriptShouldSelectTimeEvent>(
+            startTime, endTime,
+            heightMin, heightMax,
+            clear,
+            ctx.ActiveScript());
+    }
+    else {
+        // Traditional full-height selection
+        EV::Enqueue<FunscriptShouldSelectTimeEvent>(
+            startTime, endTime,
+            0.f, 100.f,
+            clear,
+            ctx.ActiveScript());
+    }
 }
 
 void ScriptTimeline::FfmpegAudioProcessingFinished(const WaveformProcessingFinishedEvent* ev) noexcept
@@ -134,11 +158,17 @@ void ScriptTimeline::handleSelectionScrolling(const OverlayDrawingCtx& ctx) noex
 void ScriptTimeline::handleTimelineHover(const OverlayDrawingCtx& ctx) noexcept
 {
 	if(IsSelecting)
-	{
-		// Update selection
-		relSel2 = (ImGui::GetMousePos().x - ctx.canvasPos.x) / ctx.canvasSize.x;
-		relSel2 = Util::Clamp(relSel2, 0.f, 1.f);
-	}
+    {
+        auto mousePos = ImGui::GetMousePos();
+        // Update horizontal selection
+        relSel2 = (mousePos.x - ctx.canvasPos.x) / ctx.canvasSize.x;
+        relSel2 = Util::Clamp(relSel2, 0.f, 1.f);
+        
+        // Update vertical selection
+        float localY = (mousePos.y - ctx.canvasPos.y) / ctx.canvasSize.y;
+        vertSel2 = 100.f - (localY * 100.f);
+        vertSel2 = Util::Clamp(vertSel2, 0.f, 100.f);
+    }
 	else if(ImGui::IsMouseDragging(ImGuiMouseButton_Middle))
 	{
 		// middle mouse panning
@@ -211,13 +241,20 @@ bool ScriptTimeline::handleTimelineClicks(const OverlayDrawingCtx& ctx) noexcept
 		EV::Enqueue<ShouldChangeActiveScriptEvent>(ctx.hoveredScriptIdx);
 		return true;
 	}
-	else if(leftMouseClicked)
-	{
-		// Begin selection
+	else if (leftMouseClicked) {
+    	// Begin selection
 		IsSelecting = true;
+		IsRectangularSelect = ImGui::IsKeyDown(ImGuiMod_Alt);
+		auto mousePos = ImGui::GetMousePos();
+		
+		// Calculate horizontal position
 		float relSel1 = (mousePos.x - ctx.canvasPos.x) / ctx.canvasSize.x;
 		relSel2 = relSel1;
 		absSel1 = ctx.offsetTime + (visibleTime * relSel1);
+
+		// Calculate vertical position (0-100 range)
+		float localY = (mousePos.y - ctx.canvasPos.y) / ctx.canvasSize.y;
+		vertSel1 = vertSel2 = 100.f - (localY * 100.f);
 		return true;
 	}
 	return false;
@@ -378,9 +415,27 @@ void ScriptTimeline::ShowScriptPositions(
 		constexpr auto selectColorBackground = IM_COL32(3, 252, 207, 100);
 		if (IsSelecting && (i == activeScriptIdx)) {
 			float relSel1 = (absSel1 - drawingCtx.offsetTime) / visibleTime;
-			drawingCtx.drawList->AddRectFilled(drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel1, 0), drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel2, drawingCtx.canvasSize.y), selectColorBackground);
-			drawingCtx.drawList->AddLine(drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel1, 0), drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel1, drawingCtx.canvasSize.y), selectColor, 3.0f);
-			drawingCtx.drawList->AddLine(drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel2, 0), drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel2, drawingCtx.canvasSize.y), selectColor, 3.0f);
+
+			ImVec2 rectMin, rectMax;
+			if (IsRectangularSelect) {
+				// Draw rectangular selection
+				float y1 = drawingCtx.canvasSize.y * (1.0f - vertSel1 / 100.f);
+				float y2 = drawingCtx.canvasSize.y * (1.0f - vertSel2 / 100.f);
+
+				rectMin = ImVec2(
+					drawingCtx.canvasPos.x + drawingCtx.canvasSize.x * std::min(relSel1, relSel2),
+					drawingCtx.canvasPos.y + std::min(y1, y2));
+				rectMax = ImVec2(
+					drawingCtx.canvasPos.x + drawingCtx.canvasSize.x * std::max(relSel1, relSel2),
+					drawingCtx.canvasPos.y + std::max(y1, y2));
+
+				drawingCtx.drawList->AddRectFilled(rectMin, rectMax, selectColorBackground);
+				drawingCtx.drawList->AddRect(rectMin, rectMax, selectColor, 0.0f, ImDrawFlags_None, 3.0f);
+			} else {
+				drawingCtx.drawList->AddRectFilled(drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel1, 0), drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel2, drawingCtx.canvasSize.y), selectColorBackground);
+				drawingCtx.drawList->AddLine(drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel1, 0), drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel1, drawingCtx.canvasSize.y), selectColor, 3.0f);
+				drawingCtx.drawList->AddLine(drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel2, 0), drawingCtx.canvasPos + ImVec2(drawingCtx.canvasSize.x * relSel2, drawingCtx.canvasSize.y), selectColor, 3.0f);
+			}
 		}
 
 		// selectionStart currently used for controller select

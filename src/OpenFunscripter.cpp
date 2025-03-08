@@ -1,4 +1,4 @@
-#include "OpenFunscripter.h"
+﻿#include "OpenFunscripter.h"
 #include "OFS_Util.h"
 #include "OFS_Profiling.h"
 #include "OFS_ImGui.h"
@@ -2805,7 +2805,11 @@ void OpenFunscripter::ScriptTimelineSelectTime(const FunscriptShouldSelectTimeEv
 {
     OFS_PROFILE(__FUNCTION__);
     if (auto script = ev->script.lock()) {
-        script->SelectTime(ev->startTime, ev->endTime, ev->clearSelection);
+        float minTime = std::min(ev->startTime, ev->endTime);
+        float maxTime = std::max(ev->startTime, ev->endTime);
+        float minPos = std::min(ev->minPos, ev->maxPos);
+        float maxPos = std::max(ev->minPos, ev->maxPos);
+        script->SelectTimeAndPosition(minTime, maxTime, minPos, maxPos, ev->clearSelection);
     }
 }
 

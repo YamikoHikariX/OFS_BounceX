@@ -19,8 +19,11 @@ public:
 	uint32_t overlayStateHandle = 0xFFFF'FFFF;
 	float absSel1 = 0.f; // absolute selection start
 	float relSel2 = 0.f; // relative selection end
+	float vertSel1 = 0.f;
+    float vertSel2 = 0.f;
 
 	bool IsSelecting = false;
+	bool IsRectangularSelect = false;
 	bool PositionsItemHovered = false;
 	int32_t IsMovingIdx = -1;
 private:

@@ -442,21 +442,30 @@ void Funscript::SelectMidActions() noexcept
 
 void Funscript::SelectTime(float fromTime, float toTime, bool clear) noexcept
 {
-	OFS_PROFILE(__FUNCTION__);
-	if(clear)
-		ClearSelection();
+    // Deprecated - keep for compatibility
+    SelectTimeAndPosition(fromTime, toTime, 0, 100, clear);
+}
 
-	for (auto& action : data.Actions) {
-		if (action.atS >= fromTime && action.atS <= toTime) {
-			ToggleSelection(action);
-		}
-		else if (action.atS > toTime)
-			break;
-	}
+void Funscript::SelectTimeAndPosition(float fromTime, float toTime, float minPos, float maxPos, bool clear) noexcept
+{
+    OFS_PROFILE(__FUNCTION__);
+    if (clear)
+        ClearSelection();
 
-	if (!clear)
-		sortSelection();
-	notifySelectionChanged();
+    for (auto& action : data.Actions) {
+        if (action.atS >= fromTime && action.atS <= toTime) {
+            // Only select if within position bounds
+            if (action.pos >= minPos && action.pos <= maxPos) {
+                ToggleSelection(action);
+            }
+        }
+        else if (action.atS > toTime)
+            break;
+    }
+
+    if (!clear)
+        sortSelection();
+    notifySelectionChanged();
 }
 
 FunscriptArray Funscript::GetSelection(float fromTime, float toTime) noexcept
