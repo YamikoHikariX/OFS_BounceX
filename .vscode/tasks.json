@@ -21,6 +21,22 @@
             }
         },
         {
+            "label": "buildDebug",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "build/",
+                "--config",
+                "RelWithDebInfo",
+                "--target",
+                "OpenFunscripter",
+                "--parallel",
+                "${env:NUMBER_OF_PROCESSORS}"
+            ],
+            "group": "build"
+        },
+        {
             "label": "buildLocalization",
             "type": "shell",
             "command": "cmake",

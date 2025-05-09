@@ -17,6 +17,19 @@
             "preLaunchTask": "build"
         },
         {
+            "name": "(Windows) OFS Debug",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/RelWithDebInfo/OpenFunscripter.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/bin",
+            "environment": [],
+            "console": "integratedTerminal",
+            "preLaunchTask": "buildDebug",
+            "requireExactSource": false
+        },
+        {
             "name": "(Windows) gen_localization",
             "type": "cppvsdbg",
             "request": "launch",
